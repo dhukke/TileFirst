@@ -9,12 +9,16 @@ public class Player : MonoBehaviour
     [SerializeField]
     private float jumpSpeed = 5f;
 
+    [SerializeField]
+    private float climbSpeed = 5f;
+
     // State
 
     // Cached component references
     private Rigidbody2D _myRigidBody;
     private Animator _myAnimator;
     private Collider2D _myCollider2D;
+    float _gravityScaleAtStart;
 
     // Message then methods
 
@@ -24,6 +28,7 @@ public class Player : MonoBehaviour
         _myRigidBody = GetComponent<Rigidbody2D>();
         _myAnimator = GetComponent<Animator>();
         _myCollider2D = GetComponent<Collider2D>();
+        _gravityScaleAtStart = _myRigidBody.gravityScale;
     }
 
     // Update is called once per frame
@@ -32,6 +37,7 @@ public class Player : MonoBehaviour
         Run();
         Jump();
         FlipSprite();
+        ClimbLadder();
     }
 
     private void Run()
@@ -47,6 +53,24 @@ public class Player : MonoBehaviour
 
         var playerHorizontalSpeed = Mathf.Abs(_myRigidBody.velocity.x) > Mathf.Epsilon;
         _myAnimator.SetBool("Running", playerHorizontalSpeed);
+    }
+
+    private void ClimbLadder()
+    {
+        if (!_myCollider2D.IsTouchingLayers(LayerMask.GetMask("Climbing")))
+        {
+            _myAnimator.SetBool("Climbing", false);
+            _myRigidBody.gravityScale = _gravityScaleAtStart;
+            return;
+        }
+
+        var controlThrow = Input.GetAxis("Vertical");
+        var climbVelocity = new Vector2(_myRigidBody.velocity.x, controlThrow * climbSpeed);
+        _myRigidBody.velocity = climbVelocity;
+        _myRigidBody.gravityScale = 0f;
+
+        var playerHasVerticalSpeed = Mathf.Abs(_myRigidBody.velocity.y) > Mathf.Epsilon;
+        _myAnimator.SetBool("Climbing", playerHasVerticalSpeed);
     }
 
     private void Jump()
